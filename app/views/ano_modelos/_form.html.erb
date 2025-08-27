@@ -1,0 +1,52 @@
+<%= form_with(model: ano_modelo) do |form| %>
+  <% if ano_modelo.errors.any? %>
+    <div style="color: red">
+      <h2><%= pluralize(ano_modelo.errors.count, "error") %> prohibited this ano_modelo from being saved:</h2>
+
+      <ul>
+        <% ano_modelo.errors.each do |error| %>
+          <li><%= error.full_message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div>
+    <%= form.label :modelo_id, style: "display: block" %>
+    <%= form.text_field :modelo_id %>
+  </div>
+
+  <div>
+    <%= form.label :referencia_fipe_id, style: "display: block" %>
+    <%= form.text_field :referencia_fipe_id %>
+  </div>
+
+  <div>
+    <%= form.label :codigo, style: "display: block" %>
+    <%= form.text_field :codigo %>
+  </div>
+
+  <div>
+    <%= form.label :nome, style: "display: block" %>
+    <%= form.text_field :nome %>
+  </div>
+
+  <div>
+    <%= form.label :ano, style: "display: block" %>
+    <%= form.number_field :ano %>
+  </div>
+
+  <div>
+    <%= form.label :combustivel, style: "display: block" %>
+    <%= form.text_field :combustivel %>
+  </div>
+
+  <div>
+    <%= form.label :combustivel_sigla, style: "display: block" %>
+    <%= form.text_field :combustivel_sigla %>
+  </div>
+
+  <div>
+    <%= form.submit %>
+  </div>
+<% end %>

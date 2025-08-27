@@ -1,0 +1,10 @@
+<p style="color: green"><%= notice %></p>
+
+<%= render @preco_veiculo %>
+
+<div>
+  <%= link_to "Edit this preco veiculo", edit_preco_veiculo_path(@preco_veiculo) %> |
+  <%= link_to "Back to preco veiculos", preco_veiculos_path %>
+
+  <%= button_to "Destroy this preco veiculo", @preco_veiculo, method: :delete %>
+</div>

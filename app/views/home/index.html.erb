@@ -1,0 +1,203 @@
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h2 class="fw-bold">Início</h2>
+  <span class="text-muted">Bem-vindo!</span>
+</div>
+
+<!-- Formulário -->
+<div class="d-flex justify-content-center mt-4">
+  <div class="card shadow-sm rounded-4 w-100" style="max-width: 80%;">
+    <div class="card-body">
+      <h4 class="mb-4">
+        <i class="fas fa-search me-2 text-secondary"></i>Buscar Carros
+      </h4>
+
+      <form onsubmit="return false;">
+        <div class="row g-3">
+          <div class="col-md-5">
+            <label for="marcas" class="form-label">Marca</label>
+            <select class="form-select" id="marcas" name="marcas">
+              <option selected value="0">-- Selecione uma marca --</option>
+              <% @marcas.each do |marca| %>
+                <option value="<%= marca.codigo %>"><%= marca.nome %></option>
+              <% end %>
+            </select>
+          </div>
+
+          <div class="col-md-5">
+            <label for="modelos" class="form-label">Modelo</label>
+            <select class="form-select" id="modelos" name="modelos" disabled>
+              <option selected value="0">-- Selecione um modelo --</option>
+            </select>
+          </div>
+
+          <div class="col-md-2 mt-auto">
+            <button class="btn btn-primary" type="button"
+                    id="submeter_pesquisa"
+                    onclick="gerarTabelaFiltrada()">
+              Buscar
+            </button>
+          </div>
+        </div>
+      </form>
+
+    </div>
+  </div>
+</div>
+
+<!-- Tabela -->
+<div class="d-flex justify-content-center mt-4"
+     id="tabela-veiculos-card" style="display: none;">
+  <div class="card shadow-sm rounded-4 w-100" style="max-width: 80%;">
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0 table-striped">
+          <thead class="table-light">
+            <tr>
+              <th>Código</th>
+              <th>Nome</th>
+              <th>Valor</th>
+              <th>Combustível</th>
+            </tr>
+          </thead>
+          <tbody id="tabela-veiculos-content"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Gráfico -->
+<div class="d-flex justify-content-center mt-4"
+     id="grafico-veiculos-card" style="display: none;">
+  <div class="card shadow-sm rounded-4 w-100" style="max-width: 80%;">
+    <div class="card-body">
+      <h5 class="mb-3 d-flex justify-content-between align-items-center">
+        <span>
+          <i class="fas fa-chart-bar me-2 text-secondary"></i>Preço por Ano
+        </span>
+        <span id="trend-indicator" class="badge rounded-pill fw-normal" style="font-size: 0.9rem;"></span>
+      </h5>
+      <canvas id="graficoAnoPreco" height="100"></canvas>
+    </div>
+  </div>
+</div>
+
+<% content_for :scripts do %>
+  <script>
+    document.getElementById('marcas').addEventListener('change', function () {
+      const marcaCodigo = this.value;
+      const modeloSelect = document.getElementById('modelos');
+
+      if (marcaCodigo === "0") {
+        modeloSelect.innerHTML = '<option selected value="0">-- Selecione um modelo --</option>';
+        modeloSelect.disabled = true;
+        return;
+      }
+
+      fetch('/marcas/' + encodeURIComponent(marcaCodigo) + '/modelos')
+        .then(r => r.ok ? r.json().catch(() => []) : [])
+        .then(data => {
+          modeloSelect.innerHTML = '<option selected value="0">-- Selecione um modelo --</option>';
+          data.forEach(modelo => {
+            const opt = document.createElement('option');
+            opt.value = modelo.codigo;   // nosso controller retorna {codigo, nome}
+            opt.textContent = modelo.nome;
+            modeloSelect.appendChild(opt);
+          });
+          modeloSelect.disabled = false;
+        })
+        .catch(err => {
+          console.error('Erro ao buscar modelos:', err);
+          modeloSelect.disabled = true;
+        });
+    });
+
+    let chartInstance = null;
+
+    window.gerarTabelaFiltrada = function gerarTabelaFiltrada() {
+      const marcaSelect  = document.getElementById('marcas');
+      const modeloSelect = document.getElementById('modelos');
+      const tableCard    = document.getElementById('tabela-veiculos-card');
+      const tableBody    = document.getElementById('tabela-veiculos-content');
+      const graficoCard  = document.getElementById('grafico-veiculos-card');
+      const canvas       = document.getElementById('graficoAnoPreco');
+
+      if (marcaSelect.value === "0" || modeloSelect.value === "0") {
+        tableCard.style.display = "none";
+        graficoCard.style.display = "none";
+        return;
+      }
+
+      fetch('/veiculos_modelo/' + encodeURIComponent(modeloSelect.value))
+        .then(r => r.ok ? r.json().catch(() => []) : [])
+        .then(data => {
+          tableBody.innerHTML = "";
+          const anos = [], precos = [];
+
+          data.forEach(veiculo => {
+            const tr = document.createElement('tr');
+
+            const valorFormatado = Number(veiculo.valor || 0).toLocaleString('pt-BR', {
+              style: 'currency', currency: 'BRL'
+            });
+
+            tr.innerHTML = `
+              <td>${veiculo.codigoFipe ?? ''}</td>
+              <td>${veiculo.modelo?.nome ?? ''} - ${veiculo.ano ?? ''}</td>
+              <td>${valorFormatado}</td>
+              <td>${veiculo.combustivel ?? ''}</td>
+            `;
+            tableBody.appendChild(tr);
+
+            if (veiculo.ano   != null) anos.push(veiculo.ano);
+            if (veiculo.valor != null) precos.push(veiculo.valor);
+          });
+
+          atualizarIndicadorTrend(precos.slice().reverse());
+          tableCard.style.display = data.length ? "block" : "none";
+          graficoCard.style.display = data.length ? "block" : "none";
+
+          if (!data.length) return;
+
+          if (chartInstance) chartInstance.destroy();
+          const ctx = canvas.getContext('2d');
+          chartInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+              labels: anos,
+              datasets: [{ label: 'Preço (R$)', data: precos, fill: false, tension: 0.2 }]
+            },
+            options: { responsive: true, scales: { y: { beginAtZero: false } } }
+          });
+        })
+        .catch(err => {
+          console.error('Erro ao buscar veículos:', err);
+          tableCard.style.display = "none";
+          graficoCard.style.display = "none";
+        });
+    }
+
+    function atualizarIndicadorTrend(valoresReverso) {
+      if (valoresReverso.length < 2) return;
+      const atual    = valoresReverso[valoresReverso.length - 2];
+      const anterior = valoresReverso[valoresReverso.length - 1];
+      const diff = atual - anterior;
+      const perc = (diff / (anterior || 1)) * 100;
+
+      const badge = document.getElementById('trend-indicator');
+      badge.classList.remove('bg-success','bg-danger','bg-secondary');
+      badge.innerHTML = '';
+
+      const icone = document.createElement('i');
+      icone.classList.add('me-1','fas');
+
+      if (diff > 0) { badge.classList.add('bg-success'); icone.classList.add('fa-arrow-up'); }
+      else if (diff < 0) { badge.classList.add('bg-danger'); icone.classList.add('fa-arrow-down'); }
+      else { badge.classList.add('bg-secondary'); icone.classList.add('fa-minus'); }
+
+      badge.appendChild(icone);
+      badge.append(`${diff > 0 ? '+' : ''}${perc.toFixed(1)}%`);
+    }
+  </script>
+<% end %>
+

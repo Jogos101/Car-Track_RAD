@@ -1,0 +1,58 @@
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-12 col-md-8 col-lg-5">
+      <div class="card shadow-sm">
+        <div class="card-body p-4">
+          <h2 class="h4 mb-4 text-center">
+            <i class="fa-solid fa-right-to-bracket me-2"></i>Entrar
+          </h2>
+
+          <%= render "devise/shared/error_messages", resource: resource %>
+
+          <%= form_for(resource, as: resource_name, url: session_path(resource_name), html: { class: "needs-validation" }) do |f| %>
+            <div class="mb-3">
+              <%= f.label :email, class: "form-label" %>
+              <div class="input-group">
+                <span class="input-group-text"><i class="fa-regular fa-envelope"></i></span>
+                <%= f.email_field :email, autofocus: true, autocomplete: "email", class: "form-control", placeholder: "seu@email.com" %>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <%= f.label :password, class: "form-label" %>
+              <div class="input-group">
+                <span class="input-group-text"><i class="fa-solid fa-lock"></i></span>
+                <%= f.password_field :password, autocomplete: "current-password", class: "form-control", placeholder: "••••••••" %>
+              </div>
+            </div>
+
+            <% if devise_mapping.rememberable? %>
+              <div class="mb-3 form-check">
+                <%= f.check_box :remember_me, class: "form-check-input", id: "remember_me" %>
+                <%= f.label :remember_me, class: "form-check-label" %>
+              </div>
+            <% end %>
+
+            <div class="d-grid">
+              <button type="submit" class="btn btn-primary">
+                <i class="fa-solid fa-right-to-bracket me-2"></i>Entrar
+              </button>
+            </div>
+          <% end %>
+
+          <hr class="my-4">
+
+          <div class="d-flex justify-content-between small">
+            <%= link_to raw('<i class="fa-regular fa-circle-question me-1"></i>Esqueci minha senha'), new_password_path(resource_name) %>
+            <% if devise_mapping.registerable? %>
+              <%= link_to raw('<i class="fa-regular fa-user me-1"></i>Criar conta'), new_registration_path(resource_name) %>
+            <% end %>
+          </div>
+
+          <%# Se preferir manter seus links customizados: %>
+          <%#= render "users/shared/links" %>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

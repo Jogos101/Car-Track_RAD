@@ -1,0 +1,420 @@
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h2 class="fw-bold">Comparador</h2>
+</div>
+
+<div class="row g-3" style="justify-content: center">
+  <!-- Card 1 -->
+  <div class="col-md-5">
+    <div class="d-flex justify-content-center mt-4">
+      <div class="card shadow-sm rounded-4 w-100" style="max-width: 80%;">
+        <div class="card-body">
+
+          <% if @condiction1 %>
+            <!-- Veículo 1 selecionado -->
+            <div data-chart-seed
+                 data-card="1"
+                 data-modelo-codigo="<%= @veiculo1[:modelo_codigo] %>"
+                 data-modelo-nome="<%= @veiculo1[:modelo_nome] %>">
+
+              <h4 class="mb-4"><%= @veiculo1[:modelo_nome] %></h4>
+
+              <h5>Ano:</h5>
+              <p><%= @veiculo1[:ano] %></p>
+
+              <h5>Combustível:</h5>
+              <p><%= @veiculo1[:combustivel] %></p>
+
+              <h5>Valor:</h5>
+              <p>R$ <%= number_with_precision(@veiculo1[:valor], precision: 2, delimiter: ".", separator: ",") %></p>
+
+              <div class="row g-3">
+                <%= link_to "Limpar", comparador_path, class: "btn btn-primary" %>
+              </div>
+            </div>
+          <% else %>
+            <!-- Form busca 1 -->
+            <h4 class="mb-4">
+              <i class="fas fa-search me-2 text-secondary"></i>Buscar Carro 1
+            </h4>
+            <form action="<%= comparador_path %>" method="get">
+                <input type="hidden" name="card" value="1" />
+
+                <%# --- PRESERVA SELEÇÃO DO CARD 2 --- %>
+                <% if @condiction2 && @veiculo2.present? %>
+                    <%= hidden_field_tag :codigoModelo2, @veiculo2[:modelo_codigo] %>
+                    <%= hidden_field_tag :codigoAno2,    @veiculo2[:ano] %>
+                <% else %>
+                    <%= hidden_field_tag :codigoModelo2, params[:codigoModelo2] if params[:codigoModelo2].present? %>
+                    <%= hidden_field_tag :codigoAno2,    params[:codigoAno2]    if params[:codigoAno2].present? %>
+                <% end %>
+
+                <div class="mb-3">
+                    <label for="marca1" class="form-label">Marca</label>
+                    <select class="form-select" id="marca1" name="marca1">
+                    <option selected value="0">-- Selecione uma marca --</option>
+                    <% @marcas.each do |m| %>
+                        <option value="<%= m.codigo %>"><%= m.nome %></option>
+                    <% end %>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label for="modelo1" class="form-label">Modelo</label>
+                    <select class="form-select" id="modelo1" name="codigoModelo" disabled>
+                    <option selected value="0">-- Selecione um modelo --</option>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label for="ano1" class="form-label">Ano</label>
+                    <select class="form-select" id="ano1" name="codigoAno" disabled>
+                    <option selected value="0">-- Selecione um ano --</option>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <button class="btn btn-primary" type="submit" id="submeter_pesquisa1" disabled>
+                    Buscar
+                    </button>
+                </div>
+            </form>
+          <% end %>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Card 2 -->
+  <div class="col-md-5">
+    <div class="d-flex justify-content-center mt-4">
+      <div class="card shadow-sm rounded-4 w-100" style="max-width: 80%;">
+        <div class="card-body">
+
+          <% if @condiction2 %>
+            <!-- Veículo 2 selecionado -->
+            <div data-chart-seed
+                 data-card="2"
+                 data-modelo-codigo="<%= @veiculo2[:modelo_codigo] %>"
+                 data-modelo-nome="<%= @veiculo2[:modelo_nome] %>">
+
+              <h4 class="mb-4"><%= @veiculo2[:modelo_nome] %></h4>
+
+              <h5>Ano:</h5>
+              <p><%= @veiculo2[:ano] %></p>
+
+              <h5>Combustível:</h5>
+              <p><%= @veiculo2[:combustivel] %></p>
+
+              <h5>Valor:</h5>
+              <p>R$ <%= number_with_precision(@veiculo2[:valor], precision: 2, delimiter: ".", separator: ",") %></p>
+
+              <div class="row g-3">
+                <%= link_to "Limpar", comparador_path, class: "btn btn-primary" %>
+              </div>
+            </div>
+          <% else %>
+            <!-- Form busca 2 -->
+            <h4 class="mb-4">
+              <i class="fas fa-search me-2 text-secondary"></i>Buscar Carro 2
+            </h4>
+            <form action="<%= comparador_path %>" method="get">
+                <input type="hidden" name="card" value="2" />
+
+                <%# --- PRESERVA SELEÇÃO DO CARD 1 --- %>
+                <% if @condiction1 && @veiculo1.present? %>
+                    <%= hidden_field_tag :codigoModelo, @veiculo1[:modelo_codigo] %>
+                    <%= hidden_field_tag :codigoAno,    @veiculo1[:ano] %>
+                    <%# se ainda quiser enviar marca1 também (não é necessário se o controller inferir pela associação), pode incluir:
+                        hidden_field_tag :marca1, params[:marca1] || (Marca.joins(:modelos).where(modelos: {codigo: @veiculo1[:modelo_codigo]}).pick(:codigo))
+                    %>
+                <% else %>
+                    <%= hidden_field_tag :codigoModelo, params[:codigoModelo] if params[:codigoModelo].present? %>
+                    <%= hidden_field_tag :codigoAno,    params[:codigoAno]    if params[:codigoAno].present? %>
+                <% end %>
+
+                <div class="mb-3">
+                    <label for="marca2" class="form-label">Marca</label>
+                    <select class="form-select" id="marca2" name="marca2">
+                    <option selected value="0">-- Selecione uma marca --</option>
+                    <% @marcas.each do |m| %>
+                        <option value="<%= m.codigo %>"><%= m.nome %></option>
+                    <% end %>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label for="modelo2" class="form-label">Modelo</label>
+                    <select class="form-select" id="modelo2" name="codigoModelo2" disabled>
+                    <option selected value="0">-- Selecione um modelo --</option>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label for="ano2" class="form-label">Ano</label>
+                    <select class="form-select" id="ano2" name="codigoAno2" disabled>
+                    <option selected value="0">-- Selecione um ano --</option>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <button class="btn btn-primary" type="submit" id="submeter_pesquisa2" disabled>
+                    Buscar
+                    </button>
+                </div>
+                </form>
+          <% end %>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Gráfico -->
+<div class="d-flex justify-content-center mt-4"
+     id="grafico-comparador-card" style="display: none;">
+  <div class="card shadow-sm rounded-4 w-100" style="max-width: 80%;">
+    <div class="card-body">
+      <h5 class="mb-3 d-flex justify-content-between align-items-center">
+        <span>
+          <i class="fas fa-chart-bar me-2 text-secondary"></i>Preço por Ano
+        </span>
+        <span id="trend-indicator" class="badge rounded-pill fw-normal d-none" style="font-size: 0.9rem;"></span>
+      </h5>
+      <canvas id="graficoComparador" height="100"></canvas>
+    </div>
+  </div>
+</div>
+
+<% content_for :scripts do %>
+  <script>
+    // ===== Busca 1 (adaptada do original) =====
+    // Original chamava /modelos/:marca e /anosModelo/:modelo. :contentReference[oaicite:7]{index=7}
+    document.getElementById('marca1')?.addEventListener('change', function () {
+      const marcaCodigo = this.value;
+      const modeloSelect = document.getElementById('modelo1');
+      const anoSelect = document.getElementById('ano1');
+      const botao = document.getElementById('submeter_pesquisa1');
+
+      modeloSelect.innerHTML = '<option selected value="0">-- Selecione um modelo --</option>';
+      anoSelect.innerHTML = '<option selected value="0">-- Selecione um ano --</option>';
+      botao.disabled = true;
+
+      if (marcaCodigo === "0") {
+        modeloSelect.disabled = true; anoSelect.disabled = true; return;
+      }
+
+      fetch('/marcas/' + encodeURIComponent(marcaCodigo) + '/modelos')
+        .then(r => r.ok ? r.json().catch(() => []) : [])
+        .then(data => {
+          data.forEach(m => {
+            const opt = document.createElement('option');
+            opt.value = m.codigo; opt.textContent = m.nome;
+            modeloSelect.appendChild(opt);
+          });
+          modeloSelect.disabled = false;
+          anoSelect.disabled = true;
+        })
+        .catch(() => { modeloSelect.disabled = true; anoSelect.disabled = true; });
+    });
+
+    document.getElementById('modelo1')?.addEventListener('change', function () {
+      const modeloCodigo = this.value;
+      const anoSelect = document.getElementById('ano1');
+      const botao = document.getElementById('submeter_pesquisa1');
+
+      botao.disabled = (modeloCodigo === '0');
+
+      fetch('/modelos/' + encodeURIComponent(modeloCodigo) + '/anos')
+        .then(r => r.ok ? r.json().catch(() => []) : [])
+        .then(data => {
+          anoSelect.innerHTML = '<option selected value="0">-- Selecione um ano --</option>';
+          data.forEach(ano => {
+            const opt = document.createElement('option');
+            opt.value = ano; opt.textContent = ano;
+            anoSelect.appendChild(opt);
+          });
+          anoSelect.disabled = false;
+        })
+        .catch(() => { anoSelect.disabled = true; });
+    });
+
+    // ===== Busca 2 (adaptada do original) =====
+    // Original chamava /modelos/:marca e /anosModelo/:modelo. :contentReference[oaicite:8]{index=8}
+    document.getElementById('marca2')?.addEventListener('change', function () {
+      const marcaCodigo = this.value;
+      const modeloSelect = document.getElementById('modelo2');
+      const anoSelect = document.getElementById('ano2');
+      const botao = document.getElementById('submeter_pesquisa2');
+
+      modeloSelect.innerHTML = '<option selected value="0">-- Selecione um modelo --</option>';
+      anoSelect.innerHTML = '<option selected value="0">-- Selecione um ano --</option>';
+      botao.disabled = true;
+
+      if (marcaCodigo === "0") {
+        modeloSelect.disabled = true; anoSelect.disabled = true; return;
+      }
+
+      fetch('/marcas/' + encodeURIComponent(marcaCodigo) + '/modelos')
+        .then(r => r.ok ? r.json().catch(() => []) : [])
+        .then(data => {
+          data.forEach(m => {
+            const opt = document.createElement('option');
+            opt.value = m.codigo; opt.textContent = m.nome;
+            modeloSelect.appendChild(opt);
+          });
+          modeloSelect.disabled = false;
+          anoSelect.disabled = true;
+        })
+        .catch(() => { modeloSelect.disabled = true; anoSelect.disabled = true; });
+    });
+
+    document.getElementById('modelo2')?.addEventListener('change', function () {
+      const modeloCodigo = this.value;
+      const anoSelect = document.getElementById('ano2');
+      const botao = document.getElementById('submeter_pesquisa2');
+
+      botao.disabled = (modeloCodigo === '0');
+
+      fetch('/modelos/' + encodeURIComponent(modeloCodigo) + '/anos')
+        .then(r => r.ok ? r.json().catch(() => []) : [])
+        .then(data => {
+          anoSelect.innerHTML = '<option selected value="0">-- Selecione um ano --</option>';
+          data.forEach(ano => {
+            const opt = document.createElement('option');
+            opt.value = ano; opt.textContent = ano;
+            anoSelect.appendChild(opt);
+          });
+          anoSelect.disabled = false;
+        })
+        .catch(() => { anoSelect.disabled = true; });
+    });
+
+    // ===== Gráfico (adaptado do original) =====
+    // No original, busca em /veiculosModelo/:modelo e monta datasets. :contentReference[oaicite:9]{index=9}
+    (function(){
+      const graficoCard = document.getElementById('grafico-comparador-card');
+      const canvas      = document.getElementById('graficoComparador');
+      if (!canvas) return;
+
+      let chart = null;
+      const seriesByCard = new Map();
+      const palette = [
+        'rgba(75, 192, 192, 1)',
+        'rgba(255, 99, 132, 1)',
+        'rgba(54, 162, 235, 1)',
+        'rgba(255, 159, 64, 1)',
+        'rgba(153, 102, 255, 1)',
+        'rgba(201, 203, 207, 1)',
+      ];
+
+      function ensureChart() {
+        if (chart) return chart;
+        chart = new Chart(canvas.getContext('2d'), {
+          type: 'line',
+          data: { labels: [], datasets: [] },
+          options: { responsive: true, spanGaps: false,
+            plugins: { legend: { display: true } },
+            scales: { y: { beginAtZero: false } } }
+        });
+        return chart;
+      }
+
+      function unionSortedYears() {
+        const set = new Set();
+        for (const { points } of seriesByCard.values()) for (const y of points.keys()) set.add(y);
+        return Array.from(set).sort((a,b) => parseInt(a)-parseInt(b));
+      }
+
+      function rebuildChart() {
+        if (seriesByCard.size === 0) {
+          if (chart) { chart.destroy(); chart = null; }
+          graficoCard.style.display = 'none';
+          document.getElementById('trend-indicator')?.classList.add('d-none');
+          return;
+        }
+        graficoCard.style.display = 'block';
+
+        const years = unionSortedYears();
+        const datasets = [];
+        let i = 0;
+        for (const { label, color, points } of seriesByCard.values()) {
+          datasets.push({
+            label,
+            data: years.map(y => points.get(String(y)) ?? null),
+            borderColor: color || palette[i % palette.length],
+            backgroundColor: 'transparent',
+            fill: false,
+            tension: 0.2,
+            pointRadius: 3
+          });
+          i++;
+        }
+
+        const inst = ensureChart();
+        inst.data.labels = years;
+        inst.data.datasets = datasets;
+        inst.update();
+
+        atualizarIndicadorTrend(datasets);
+      }
+
+      function atualizarIndicadorTrend(datasets) {
+        const badge = document.getElementById('trend-indicator');
+        if (!badge) return;
+
+        let serie = null;
+        for (let i = datasets.length - 1; i >= 0; i--) {
+          const arr = datasets[i].data.filter(v => v != null);
+          if (arr.length >= 2) { serie = arr; break; }
+        }
+        if (!serie) { badge.className = 'badge rounded-pill fw-normal d-none'; badge.textContent = ''; return; }
+
+        const atual    = serie[serie.length - 1];
+        const anterior = serie[serie.length - 2];
+        const diff     = atual - anterior;
+        const perc     = anterior ? (diff / anterior) * 100 : 0;
+
+        badge.className = 'badge rounded-pill fw-normal';
+        badge.classList.remove('bg-success','bg-danger','bg-secondary');
+        badge.innerHTML = '';
+        const icone = document.createElement('i'); icone.classList.add('me-1','fas');
+
+        if (diff > 0) { badge.classList.add('bg-success'); icone.classList.add('fa-arrow-up'); }
+        else if (diff < 0) { badge.classList.add('bg-danger'); icone.classList.add('fa-arrow-down'); }
+        else { badge.classList.add('bg-secondary'); icone.classList.add('fa-minus'); }
+
+        badge.appendChild(icone);
+        badge.append(`${diff > 0 ? '+' : ''}${perc.toFixed(1)}%`);
+      }
+
+      async function fetchSerie(modeloCodigo) {
+        const resp = await fetch('/veiculos_modelo/' + encodeURIComponent(modeloCodigo));
+        if (!resp.ok) return new Map();
+        const data = await resp.json().catch(() => []);
+        const points = new Map();
+        for (const v of data) points.set(String(v.ano), Number(v.valor));
+        return points;
+      }
+
+      async function addOrUpdateCard(card, modeloCodigo, modeloNome) {
+        const color  = palette[(card - 1) % palette.length];
+        const points = await fetchSerie(modeloCodigo);
+        seriesByCard.set(String(card), { label: modeloNome, color, points });
+        rebuildChart();
+      }
+
+      document.addEventListener('DOMContentLoaded', async () => {
+        const seeds = document.querySelectorAll('[data-chart-seed]');
+        if (seeds.length === 0) { rebuildChart(); return; }
+        await Promise.all(Array.from(seeds).map(async seed => {
+          const card = Number(seed.dataset.card);
+          const modeloCodigo = seed.dataset.modeloCodigo;
+          const modeloNome   = seed.dataset.modeloNome;
+          await addOrUpdateCard(card, modeloCodigo, modeloNome);
+        }));
+      });
+    })();
+  </script>
+<% end %>

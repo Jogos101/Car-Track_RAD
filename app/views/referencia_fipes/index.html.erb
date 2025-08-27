@@ -1,0 +1,16 @@
+<p style="color: green"><%= notice %></p>
+
+<% content_for :title, "Referencia fipes" %>
+
+<h1>Referencia fipes</h1>
+
+<div id="referencia_fipes">
+  <% @referencia_fipes.each do |referencia_fipe| %>
+    <%= render referencia_fipe %>
+    <p>
+      <%= link_to "Show this referencia fipe", referencia_fipe %>
+    </p>
+  <% end %>
+</div>
+
+<%= link_to "New referencia fipe", new_referencia_fipe_path %>

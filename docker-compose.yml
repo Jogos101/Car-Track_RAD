@@ -1,0 +1,40 @@
+services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: "1895"
+      POSTGRES_DB: postgres
+    ports:
+      - "5555:5432"
+    volumes:
+      - dbdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  web:
+    build: .
+    command: bash -lc "bundle exec rails s -b 0.0.0.0 -p ${PORT:-3000}"
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/myapp
+    environment:
+      PGHOST: db
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: "1895"
+      PGDATABASE: postgres
+      PGSCHEMA: "car_track,public"
+      RAILS_ENV: development
+      RUBYOPT: ""
+      DISABLE_SPRING: "1"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  dbdata:

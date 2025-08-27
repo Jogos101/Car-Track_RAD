@@ -1,0 +1,10 @@
+<p style="color: green"><%= notice %></p>
+
+<%= render @ano_modelo %>
+
+<div>
+  <%= link_to "Edit this ano modelo", edit_ano_modelo_path(@ano_modelo) %> |
+  <%= link_to "Back to ano modelos", ano_modelos_path %>
+
+  <%= button_to "Destroy this ano modelo", @ano_modelo, method: :delete %>
+</div>

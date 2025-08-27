@@ -1,0 +1,23 @@
+default: &default
+  adapter: postgresql
+  encoding: unicode
+  pool: <%= ENV.fetch("RAILS_MAX_THREADS", 5) %>
+  variables:
+    statement_timeout: 5000
+  username: <%= ENV.fetch("PGUSER", "postgres") %>
+  password: <%= ENV.fetch("PGPASSWORD", "1895") %>
+  host:     <%= ENV.fetch("PGHOST", "db") %>
+  port:     <%= ENV.fetch("PGPORT", 5432) %>
+  schema_search_path: <%= ENV.fetch("PGSCHEMA", "car_track,public") %>
+
+development:
+  <<: *default
+  database: <%= ENV.fetch("PGDATABASE", "postgres") %>
+
+test:
+  <<: *default
+  database: <%= ENV.fetch("PGDATABASE_TEST", "postgres") %>
+
+production:
+  <<: *default
+  url: <%= ENV["DATABASE_URL"] %>

@@ -1,0 +1,16 @@
+<p style="color: green"><%= notice %></p>
+
+<% content_for :title, "Preco veiculos" %>
+
+<h1>Preco veiculos</h1>
+
+<div id="preco_veiculos">
+  <% @preco_veiculos.each do |preco_veiculo| %>
+    <%= render preco_veiculo %>
+    <p>
+      <%= link_to "Show this preco veiculo", preco_veiculo %>
+    </p>
+  <% end %>
+</div>
+
+<%= link_to "New preco veiculo", new_preco_veiculo_path %>

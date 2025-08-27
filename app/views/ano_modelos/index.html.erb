@@ -1,0 +1,16 @@
+<p style="color: green"><%= notice %></p>
+
+<% content_for :title, "Ano modelos" %>
+
+<h1>Ano modelos</h1>
+
+<div id="ano_modelos">
+  <% @ano_modelos.each do |ano_modelo| %>
+    <%= render ano_modelo %>
+    <p>
+      <%= link_to "Show this ano modelo", ano_modelo %>
+    </p>
+  <% end %>
+</div>
+
+<%= link_to "New ano modelo", new_ano_modelo_path %>

@@ -1,0 +1,12 @@
+<% content_for :title, "Editing preco veiculo" %>
+
+<h1>Editing preco veiculo</h1>
+
+<%= render "form", preco_veiculo: @preco_veiculo %>
+
+<br>
+
+<div>
+  <%= link_to "Show this preco veiculo", @preco_veiculo %> |
+  <%= link_to "Back to preco veiculos", preco_veiculos_path %>
+</div>
