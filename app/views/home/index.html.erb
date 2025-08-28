@@ -83,121 +83,200 @@
 </div>
 
 <% content_for :scripts do %>
-  <script>
-    document.getElementById('marcas').addEventListener('change', function () {
-      const marcaCodigo = this.value;
-      const modeloSelect = document.getElementById('modelos');
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const $ = (id) => document.getElementById(id);
 
-      if (marcaCodigo === "0") {
-        modeloSelect.innerHTML = '<option selected value="0">-- Selecione um modelo --</option>';
-        modeloSelect.disabled = true;
-        return;
-      }
+  // Elementos da Home (podem não existir em outras páginas)
+  const marcaSel   = $('marcas');
+  const modeloSel  = $('modelos');
+  const btnBuscar  = $('submeter_pesquisa');
+  const tableCard  = $('tabela-veiculos-card');
+  const tableBody  = $('tabela-veiculos-content');
+  const graficoCard= $('grafico-veiculos-card');
+  const canvas     = $('graficoAnoPreco');
 
-      fetch('/marcas/' + encodeURIComponent(marcaCodigo) + '/modelos')
-        .then(r => r.ok ? r.json().catch(() => []) : [])
-        .then(data => {
-          modeloSelect.innerHTML = '<option selected value="0">-- Selecione um modelo --</option>';
-          data.forEach(modelo => {
-            const opt = document.createElement('option');
-            opt.value = modelo.codigo;   // nosso controller retorna {codigo, nome}
-            opt.textContent = modelo.nome;
-            modeloSelect.appendChild(opt);
-          });
-          modeloSelect.disabled = false;
-        })
-        .catch(err => {
-          console.error('Erro ao buscar modelos:', err);
-          modeloSelect.disabled = true;
-        });
+  // Paginação (podem não existir se você não colou o bloco)
+  const pager      = $('paginacao');
+  const pageInfo   = $('pageInfo');
+  const pageSizeEl = $('pageSize');
+  const btnFirst   = $('btnFirst');
+  const btnPrev    = $('btnPrev');
+  const btnNext    = $('btnNext');
+  const btnLast    = $('btnLast');
+
+  // Se não é a Home, sai sem erro.
+  if (!marcaSel || !modeloSel || !tableBody) return;
+
+  // Estado de paginação
+  let DATASET = [];
+  let chartInstance = null;
+  let currentPage = 1;
+  let pageSize = (pageSizeEl && parseInt(pageSizeEl.value, 10)) || 10;
+
+  // Marca → Modelos
+  marcaSel.addEventListener('change', async () => {
+    if (!modeloSel) return;
+    const marcaCodigo = marcaSel.value;
+
+    if (marcaCodigo === "0") {
+      modeloSel.innerHTML = '<option selected value="0">-- Selecione um modelo --</option>';
+      modeloSel.disabled = true;
+      return;
+    }
+
+    try {
+      const resp = await fetch('/marcas/' + encodeURIComponent(marcaCodigo) + '/modelos');
+      const data = resp.ok ? await resp.json().catch(() => []) : [];
+      modeloSel.innerHTML = '<option selected value="0">-- Selecione um modelo --</option>';
+      data.forEach(m => {
+        const opt = document.createElement('option');
+        opt.value = m.codigo;
+        opt.textContent = m.nome;
+        modeloSel.appendChild(opt);
+      });
+      modeloSel.disabled = false;
+    } catch (e) {
+      console.error('Erro ao buscar modelos:', e);
+      modeloSel.disabled = true;
+    }
+  });
+
+  // Buscar
+  if (btnBuscar) {
+    btnBuscar.addEventListener('click', gerarTabelaFiltrada);
+  }
+
+  async function gerarTabelaFiltrada() {
+    if (!tableCard || !graficoCard) return;
+
+    const marcaCodigo  = marcaSel.value;
+    const modeloCodigo = modeloSel.value;
+
+    if (marcaCodigo === "0" || modeloCodigo === "0") {
+      tableCard.style.display = "none";
+      graficoCard.style.display = "none";
+      if (pager) pager.style.display = "none";
+      return;
+    }
+
+    try {
+      const resp = await fetch('/veiculos_modelo/' + encodeURIComponent(modeloCodigo));
+      const data = resp.ok ? await resp.json().catch(() => []) : [];
+      DATASET = Array.isArray(data) ? data : [];
+      currentPage = 1;
+
+      if (pageSizeEl) pageSize = parseInt(pageSizeEl.value, 10) || 10;
+
+      renderTablePage();
+      renderChart(DATASET); // o gráfico usa todos os pontos
+    } catch (e) {
+      console.error('Erro ao buscar veículos:', e);
+      tableCard.style.display = "none";
+      graficoCard.style.display = "none";
+      if (pager) pager.style.display = "none";
+    }
+  }
+
+  function renderTablePage() {
+    const total = DATASET.length;
+    tableBody.innerHTML = "";
+
+    if (!total) {
+      tableCard.style.display = "none";
+      if (pager) pager.style.display = "none";
+      return;
+    }
+
+    const totalPages = Math.max(1, Math.ceil(total / pageSize));
+    currentPage = Math.min(Math.max(1, currentPage), totalPages);
+
+    const startIdx = (currentPage - 1) * pageSize;
+    const endIdx   = Math.min(startIdx + pageSize, total);
+    const slice    = DATASET.slice(startIdx, endIdx);
+
+    slice.forEach(v => {
+      const tr = document.createElement('tr');
+      const valorFormatado = Number(v.valor || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+      tr.innerHTML = `
+        <td>${v.codigoFipe ?? ''}</td>
+        <td>${v.modelo?.nome ?? ''} - ${v.ano ?? ''}</td>
+        <td>${valorFormatado}</td>
+        <td>${v.combustivel ?? ''}</td>
+      `;
+      tableBody.appendChild(tr);
     });
 
-    let chartInstance = null;
-
-    window.gerarTabelaFiltrada = function gerarTabelaFiltrada() {
-      const marcaSelect  = document.getElementById('marcas');
-      const modeloSelect = document.getElementById('modelos');
-      const tableCard    = document.getElementById('tabela-veiculos-card');
-      const tableBody    = document.getElementById('tabela-veiculos-content');
-      const graficoCard  = document.getElementById('grafico-veiculos-card');
-      const canvas       = document.getElementById('graficoAnoPreco');
-
-      if (marcaSelect.value === "0" || modeloSelect.value === "0") {
-        tableCard.style.display = "none";
-        graficoCard.style.display = "none";
-        return;
-      }
-
-      fetch('/veiculos_modelo/' + encodeURIComponent(modeloSelect.value))
-        .then(r => r.ok ? r.json().catch(() => []) : [])
-        .then(data => {
-          tableBody.innerHTML = "";
-          const anos = [], precos = [];
-
-          data.forEach(veiculo => {
-            const tr = document.createElement('tr');
-
-            const valorFormatado = Number(veiculo.valor || 0).toLocaleString('pt-BR', {
-              style: 'currency', currency: 'BRL'
-            });
-
-            tr.innerHTML = `
-              <td>${veiculo.codigoFipe ?? ''}</td>
-              <td>${veiculo.modelo?.nome ?? ''} - ${veiculo.ano ?? ''}</td>
-              <td>${valorFormatado}</td>
-              <td>${veiculo.combustivel ?? ''}</td>
-            `;
-            tableBody.appendChild(tr);
-
-            if (veiculo.ano   != null) anos.push(veiculo.ano);
-            if (veiculo.valor != null) precos.push(veiculo.valor);
-          });
-
-          atualizarIndicadorTrend(precos.slice().reverse());
-          tableCard.style.display = data.length ? "block" : "none";
-          graficoCard.style.display = data.length ? "block" : "none";
-
-          if (!data.length) return;
-
-          if (chartInstance) chartInstance.destroy();
-          const ctx = canvas.getContext('2d');
-          chartInstance = new Chart(ctx, {
-            type: 'line',
-            data: {
-              labels: anos,
-              datasets: [{ label: 'Preço (R$)', data: precos, fill: false, tension: 0.2 }]
-            },
-            options: { responsive: true, scales: { y: { beginAtZero: false } } }
-          });
-        })
-        .catch(err => {
-          console.error('Erro ao buscar veículos:', err);
-          tableCard.style.display = "none";
-          graficoCard.style.display = "none";
-        });
+    tableCard.style.display = "block";
+    if (pager) {
+      pager.style.display = "flex";
+      if (pageInfo) pageInfo.textContent = `Exibindo ${startIdx + 1}-${endIdx} de ${total} • Página ${currentPage}/${totalPages}`;
+      if (btnFirst) btnFirst.disabled = (currentPage <= 1);
+      if (btnPrev)  btnPrev .disabled = (currentPage <= 1);
+      if (btnLast)  btnLast .disabled = (currentPage >= totalPages);
+      if (btnNext)  btnNext .disabled = (currentPage >= totalPages);
     }
+  }
 
-    function atualizarIndicadorTrend(valoresReverso) {
-      if (valoresReverso.length < 2) return;
-      const atual    = valoresReverso[valoresReverso.length - 2];
-      const anterior = valoresReverso[valoresReverso.length - 1];
-      const diff = atual - anterior;
-      const perc = (diff / (anterior || 1)) * 100;
+  function renderChart(dataset) {
+    if (!canvas || !graficoCard) return;
 
-      const badge = document.getElementById('trend-indicator');
-      badge.classList.remove('bg-success','bg-danger','bg-secondary');
-      badge.innerHTML = '';
+    const anos   = [];
+    const precos = [];
+    dataset.forEach(v => {
+      if (v.ano   != null) anos.push(v.ano);
+      if (v.valor != null) precos.push(v.valor);
+    });
 
-      const icone = document.createElement('i');
-      icone.classList.add('me-1','fas');
+    atualizarIndicadorTrend(precos.slice().reverse());
+    const hasData = dataset.length > 0;
+    graficoCard.style.display = hasData ? "block" : "none";
+    if (!hasData) return;
 
-      if (diff > 0) { badge.classList.add('bg-success'); icone.classList.add('fa-arrow-up'); }
-      else if (diff < 0) { badge.classList.add('bg-danger'); icone.classList.add('fa-arrow-down'); }
-      else { badge.classList.add('bg-secondary'); icone.classList.add('fa-minus'); }
+    if (chartInstance) chartInstance.destroy();
+    const ctx = canvas.getContext('2d');
+    chartInstance = new Chart(ctx, {
+      type: 'line',
+      data: { labels: anos, datasets: [{ label: 'Preço (R$)', data: precos, fill: false, tension: 0.2 }] },
+      options: { responsive: true, scales: { y: { beginAtZero: false } } }
+    });
+  }
 
-      badge.appendChild(icone);
-      badge.append(`${diff > 0 ? '+' : ''}${perc.toFixed(1)}%`);
-    }
-  </script>
+  // Listeners de paginação – só se os elementos existem
+  if (pageSizeEl) pageSizeEl.addEventListener('change', () => {
+    pageSize = parseInt(pageSizeEl.value, 10) || 10;
+    currentPage = 1;
+    renderTablePage();
+  });
+  if (btnFirst) btnFirst.addEventListener('click', () => { currentPage = 1; renderTablePage(); });
+  if (btnPrev ) btnPrev .addEventListener('click', () => { currentPage -= 1; renderTablePage(); });
+  if (btnNext ) btnNext .addEventListener('click', () => { currentPage += 1; renderTablePage(); });
+  if (btnLast ) btnLast .addEventListener('click', () => {
+    const totalPages = Math.max(1, Math.ceil(DATASET.length / pageSize));
+    currentPage = totalPages;
+    renderTablePage();
+  });
+
+  function atualizarIndicadorTrend(valoresReverso) {
+    const badge = $('trend-indicator');
+    if (!badge || valoresReverso.length < 2) return;
+
+    const atual    = valoresReverso[valoresReverso.length - 2];
+    const anterior = valoresReverso[valoresReverso.length - 1];
+    const diff = atual - anterior;
+    const perc = (diff / (anterior || 1)) * 100;
+
+    badge.classList.remove('bg-success','bg-danger','bg-secondary');
+    badge.innerHTML = '';
+    const icone = document.createElement('i'); icone.classList.add('me-1','fas');
+
+    if (diff > 0) { badge.classList.add('bg-success'); icone.classList.add('fa-arrow-up'); }
+    else if (diff < 0) { badge.classList.add('bg-danger'); icone.classList.add('fa-arrow-down'); }
+    else { badge.classList.add('bg-secondary'); icone.classList.add('fa-minus'); }
+
+    badge.appendChild(icone);
+    badge.append(`${diff > 0 ? '+' : ''}${perc.toFixed(1)}%`);
+  }
+});
+</script>
 <% end %>
-
