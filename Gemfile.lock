@@ -130,7 +130,7 @@ GEM
     nokogiri (1.18.9-x86_64-linux-gnu)
       racc (~> 1.4)
     orm_adapter (0.5.0)
-    pg (1.6.1-x86_64-linux)
+    pg (1.6.2-x86_64-linux)
     pp (0.6.2)
       prettyprint
     prettyprint (0.2.0)
@@ -226,7 +226,7 @@ DEPENDENCIES
   cancancan (~> 3.6)
   devise
   importmap-rails
-  pg (~> 1.5)
+  pg (~> 1.6)
   puma
   rails (~> 8.0)
   rspec-rails
